@@ -1,26 +1,200 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Two colours and a signal. There is no grey in the palette: where a
+   surface looks grey it is a photograph, or ink at an opacity. */
+@theme {
+  --color-paper: #ffffff;
+  --color-ink: #000000;
+  --color-signal: #ff2d16;
+
+  /* the only two mixed values, both hairlines */
+  --color-rule-light: #e6e6e6;
+  --color-rule-dark: #1c1c1c;
+
+  --font-display: var(--font-cormorant), "Times New Roman", Georgia, serif;
+  --font-sans: var(--font-inter), "Helvetica Neue", Arial, sans-serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* base */
+html {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  overflow-x: clip;
+  overscroll-behavior-y: none;
+}
+
+::selection {
+  background: var(--color-signal);
+  color: var(--color-paper);
+}
+
+/* Lenis owns the scroll; these are the three rules it needs. */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+html[data-pointer="custom"],
+html[data-pointer="custom"] * {
+  cursor: none !important;
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* type */
+
+/* Set large and tracked open. The scale does the shouting, but the
+   stems still need enough weight to survive a photograph behind them. */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 0.92;
+  letter-spacing: -0.015em;
+}
+
+@utility display-italic {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-style: italic;
+  line-height: 1.02;
+}
+
+/* utility text: medium weight, wide, uppercase */
+@utility label {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: clamp(0.5938rem, 0.74vw, 0.75rem);
+  letter-spacing: 0.34em;
+  text-transform: uppercase;
+}
+
+@utility edge {
+  padding-inline: clamp(1.125rem, 4.4vw, 4.5rem);
+}
+
+/* photography */
+
+/* Stills are graded at the CDN (lib/media.ts). Only footage, which
+   cannot be, is filtered here. */
+@utility grade-video {
+  filter: grayscale(1) contrast(1.62) brightness(1.02);
+}
+
+@utility fill-abs {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* text-shaped image masks */
+
+/* background-clip: text is the only way to do this to real, selectable
+   type. The fallback is solid ink, so the word never disappears. */
+@utility masked-type {
+  color: var(--color-ink);
+  background-repeat: no-repeat;
+  /* Deliberately oversized: at 1:1 a letter frames a whole busy
+     scene and reads as noise. Blown up, each glyph holds one
+     region of the picture and the word stays a word. */
+  background-size: 210% auto;
+  background-position: 50% 50%;
+}
+
+@supports (-webkit-background-clip: text) or (background-clip: text) {
+  .masked-type {
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}
+
+/* split-text primitives */
+/* `flex-shrink: 0` matters as much as the padding. `overflow: hidden`
+   drops an element's automatic minimum size to zero, so a mask used as
+   a flex item is squashed below its own text and clips it.
+
+   The mask has to be taller than the line box it wraps at both ends:
+   every display size here runs a line-height under 1.1 and Cormorant
+   reaches well past that, so a tight mask crops every g, p and y. The
+   negative margins give the room back so nothing around it moves.
+
+   Two things follow. Anything travelling out of a mask has to clear
+   100% plus this padding, hence the 150s in Reel and Nav. And the
+   padding is in em, so the mask only measures correctly when it carries
+   the font-size of the text inside it. */
+.line-mask {
+  display: block;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding-block: 0.2em;
+  margin-block: -0.2em;
+}
+
+.split-line {
+  will-change: transform;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* the scroll cue */
+@keyframes cue {
+  0% {
+    transform: translateY(-120%);
+  }
+  55% {
+    transform: translateY(320%);
+  }
+  100% {
+    transform: translateY(320%);
+  }
+}
+
+/* preloader status light */
+@keyframes pulse-signal {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html[data-pointer="custom"],
+  html[data-pointer="custom"] * {
+    cursor: auto !important;
+  }
 }
