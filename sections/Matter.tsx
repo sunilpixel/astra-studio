@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Chapter from "@/components/Chapter";
+import { chapterNo } from "@/lib/chapters";
 import MaskedType from "@/components/MaskedType";
 import { gsap, isTouch, prefersReducedMotion, ScrollTrigger } from "@/lib/gsap";
 import { scrollState } from "@/lib/scroll";
@@ -145,7 +146,7 @@ export default function Matter() {
               One photograph of one object, seen only through the word
               for what it is made of.
             </p>
-            <span className="label shrink-0 text-ink/70">04 — Matter</span>
+            <span className="label shrink-0 text-ink/70">{chapterNo("matter")} — Matter</span>
           </div>
         </div>
       </div>

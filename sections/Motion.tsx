@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Chapter from "@/components/Chapter";
+import { chapterNo } from "@/lib/chapters";
 import Plate from "@/components/Plate";
 import { gsap, ScrollTrigger, prefersReducedMotion } from "@/lib/gsap";
 import { usePinSection } from "@/hooks/animation";
@@ -184,7 +185,7 @@ export default function Motion() {
           ref={foot}
           className="edge absolute inset-x-0 bottom-[clamp(1.5rem,4vw,3rem)] flex items-end justify-between gap-6 opacity-0"
         >
-          <span className="label text-paper/70">08 — Motion</span>
+          <span className="label text-paper/70">{chapterNo("motion")} — Motion</span>
           <span className="label text-paper/70">00:12 / loop</span>
         </div>
       </div>

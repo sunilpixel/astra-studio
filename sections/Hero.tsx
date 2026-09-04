@@ -12,7 +12,10 @@ import {
 import { usePinSection } from "@/hooks/animation";
 import { useIsomorphicLayoutEffect } from "@/hooks/useIsomorphicLayoutEffect";
 import { blade, iris } from "@/lib/clip";
+import { CHAPTERS } from "@/lib/chapters";
+import { scrollState } from "@/lib/scroll";
 import type { FabricHandle } from "@/webgl/fabricText";
+import type { SnowHandle } from "@/webgl/snowfield";
 
 /**
  * Black didone, inflated, on white.
@@ -30,7 +33,12 @@ export default function Hero() {
   const plate = useRef<HTMLDivElement>(null);
   const ui = useRef<HTMLDivElement>(null);
   const sub = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLDivElement>(null);
+  const air = useRef<HTMLCanvasElement>(null);
+  const dust = useRef<SnowHandle | null>(null);
   const [webglReady, setWebglReady] = useState(false);
+
+  const next = CHAPTERS[1];
 
   useEffect(() => {
     const el = canvas.current;
@@ -96,6 +104,47 @@ export default function Hero() {
     };
   }, []);
 
+  // The blade that ends the section used to be a flat fill, which meant
+  // the last viewport of the hero was an empty black rectangle holding
+  // the scroll. It carries the same air as the joins between movements.
+  useEffect(() => {
+    const canvas = air.current;
+    if (!canvas || prefersReducedMotion()) return;
+
+    let handle: SnowHandle | null = null;
+    let cancelled = false;
+
+    import("@/webgl/snowfield").then(({ createSnowfield }) => {
+      if (cancelled || !air.current) return;
+      handle = createSnowfield({
+        back: air.current,
+        quality: isTouch() || window.innerWidth < 820 ? "low" : "high",
+        tint: [255, 253, 248],
+        sizeScale: 0.8,
+      });
+      handle.setDensity(0);
+      dust.current = handle;
+    });
+
+    const pump = () => dust.current?.setVelocity(scrollState.velocity);
+    gsap.ticker.add(pump);
+
+    const st = ScrollTrigger.create({
+      trigger: "#nothing",
+      start: "top bottom",
+      end: "bottom top",
+      onToggle: (self) => dust.current?.setActive(self.isActive),
+    });
+
+    return () => {
+      cancelled = true;
+      st.kill();
+      gsap.ticker.remove(pump);
+      handle?.destroy();
+      dust.current = null;
+    };
+  }, []);
+
   // stop drawing once the word is behind you
   useEffect(() => {
     const st = ScrollTrigger.create({
@@ -121,11 +170,19 @@ export default function Hero() {
         scale: still ? 1 : 1.32 - open * 0.3,
       });
 
-      // The blade takes the last quarter.
+      // The blade takes the last quarter, and carries the volume's own
+      // title card across with it rather than a flat black rectangle.
       const slice = gsap.utils.clamp(0, 1, (p - 0.74) / 0.26);
       gsap.set(cut.current, {
         clipPath: blade(slice, "right"),
         opacity: slice > 0.001 ? 1 : 0,
+      });
+      dust.current?.setDensity(gsap.utils.clamp(0, 1, slice * 1.8));
+
+      const told = gsap.utils.clamp(0, 1, (slice - 0.42) / 0.42);
+      gsap.set(card.current, {
+        opacity: told,
+        y: still ? 0 : (1 - told) * 26,
       });
 
       const chrome = 1 - gsap.utils.clamp(0, 1, p / 0.2);
@@ -278,12 +335,38 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* depth 04: the cut that ends the section */}
+        {/* depth 04: the cut that ends the section, and what it says */}
         <div
           ref={cut}
           className="pointer-events-none absolute inset-0 bg-ink opacity-0"
           style={{ clipPath: blade(0, "right") }}
-        />
+        >
+          <canvas ref={air} className="absolute inset-0 h-full w-full" />
+
+          <div
+            ref={card}
+            className="edge absolute inset-x-0 bottom-[clamp(3rem,12vh,7rem)] text-paper opacity-0"
+          >
+            <div className="mx-auto max-w-[92rem]">
+              <div className="h-px w-full bg-paper/25" />
+              <div className="grid items-end gap-x-[clamp(1.5rem,4vw,3.5rem)] gap-y-6 pt-[clamp(1rem,2.4vw,1.75rem)] sm:grid-cols-[minmax(0,1fr)_auto]">
+                <p
+                  className="display max-w-[24ch] leading-[1.06]"
+                  style={{ fontSize: "clamp(1.5rem,3.4vw,2.9rem)" }}
+                >
+                  Twenty things photographed against nothing, and the
+                  space they leave behind.
+                </p>
+                <div className="flex items-baseline gap-4 sm:justify-end">
+                  <span className="label text-paper/45">Next</span>
+                  <span className="label text-paper">
+                    {next.index} / {next.title}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </Chapter>
   );

@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import Chapter from "@/components/Chapter";
+import { chapterNo } from "@/lib/chapters";
 import Plate from "@/components/Plate";
 import { gsap, prefersReducedMotion } from "@/lib/gsap";
 import { usePinSection } from "@/hooks/animation";
@@ -198,7 +199,7 @@ export default function Passage() {
 
         <div className="edge absolute inset-x-0 bottom-[clamp(1.5rem,4vw,3rem)] z-50">
           <div className="flex items-center gap-4 mix-blend-difference">
-            <span className="label shrink-0 text-paper">09 — Passage</span>
+            <span className="label shrink-0 text-paper">{chapterNo("passage")} — Passage</span>
             <span className="relative h-px flex-1 bg-paper/25">
               <span
                 ref={bar}

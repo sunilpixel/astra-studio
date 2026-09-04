@@ -1,6 +1,7 @@
 "use client";
 
 import Chapter from "@/components/Chapter";
+import { chapterNo } from "@/lib/chapters";
 import Plate from "@/components/Plate";
 import {
   useClipReveal,
@@ -12,8 +13,11 @@ import {
 import { gsap, prefersReducedMotion } from "@/lib/gsap";
 
 // Three words at three distances: one behind the photograph, one level
-// with it, one in front. The two outer ones run off the page edges on
-// purpose.
+// with it, one in front. The depth is in the parallax speeds, not in
+// hanging them off the edges: at 15vw the outer two carried a negative
+// margin, a growing letter-spacing and a scroll drift all pushing the
+// same way, and on a narrow window they compounded into a word with its
+// first letter cut off.
 export default function Between() {
   const spaceRef = useTracking<HTMLDivElement>({ from: -0.02, to: 0.16 });
   const betweenRef = useParallax<HTMLDivElement>({ speed: 0.34 });
@@ -25,11 +29,12 @@ export default function Between() {
     start: "top 78%",
   });
 
-  // The outer words drift apart as the section passes.
+  // The outer words drift apart as the section passes. Bounded, so
+  // that with the tracking at its widest they still land inside the edge.
   const scope = useGsapContext<HTMLDivElement>((el) => {
     if (prefersReducedMotion()) return;
     gsap.to(el.querySelectorAll("[data-drift]"), {
-      x: (i: number) => (i === 0 ? -70 : 70),
+      x: (i: number) => (i === 0 ? -30 : 30),
       ease: "none",
       scrollTrigger: {
         trigger: el,
@@ -47,12 +52,12 @@ export default function Between() {
         className="relative overflow-clip bg-paper py-[clamp(6rem,16vh,12rem)] text-ink"
       >
         <div className="edge relative mx-auto flex min-h-[86vh] max-w-[112rem] flex-col justify-center md:min-h-[110vh]">
-          {/* the far word, cropped by the left edge */}
+          {/* the far word */}
           <div
             data-drift
             ref={spaceRef}
-            className="display pointer-events-none relative z-10 -ml-[7vw] text-ink select-none"
-            style={{ fontSize: "clamp(3.6rem,15vw,14rem)" }}
+            className="display pointer-events-none relative z-10 text-ink select-none"
+            style={{ fontSize: "clamp(2.6rem,11.5vw,11rem)" }}
           >
             The Space
           </div>
@@ -105,19 +110,19 @@ export default function Between() {
             Between
           </div>
 
-          {/* the nearest word, cropped by the right edge */}
+          {/* the nearest word */}
           <div
             data-drift
             ref={thingsRef}
-            className="display pointer-events-none relative z-30 -mt-[5vw] -mr-[9vw] text-right text-ink select-none"
-            style={{ fontSize: "clamp(3.6rem,15vw,14rem)" }}
+            className="display pointer-events-none relative z-30 -mt-[5vw] text-right text-ink select-none"
+            style={{ fontSize: "clamp(2.6rem,11.5vw,11rem)" }}
           >
             Things.
           </div>
 
           <div className="relative z-30 mt-[clamp(3rem,8vw,7rem)] grid gap-8 md:grid-cols-12">
             <div className="label text-ink/70 md:col-span-3">
-              02 — The Space Between
+              {chapterNo("between")} — The Space Between
             </div>
             <p
               ref={copyRef}

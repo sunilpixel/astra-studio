@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import Chapter from "@/components/Chapter";
+import { chapterNo, MOVEMENTS } from "@/lib/chapters";
 import { gsap, prefersReducedMotion } from "@/lib/gsap";
 import { scrollTo } from "@/lib/scroll";
 import { usePinSection, useMagnetic } from "@/hooks/animation";
@@ -18,6 +19,11 @@ const CHARS = ["S", "t", "i", "l", "l", "."];
 const RELEASE = [0.34, 0.42, 0.5, 0.46, 0.38, 0.66];
 const MASS = [1.2, 1.05, 0.9, 1.1, 1.3, 0.7];
 const SPIN = [-6, 4, -3, 5, -8, 12];
+
+const ELSEWHERE = [
+  { label: "Instagram", href: "https://instagram.com" },
+  { label: "Contact", href: "mailto:studio@astra.example" },
+];
 
 export default function Still() {
   const chars = useRef<(HTMLSpanElement | null)[]>([]);
@@ -80,11 +86,13 @@ export default function Still() {
           style={{ clipPath: iris(0) }}
           aria-hidden
         >
-          <div className="absolute top-1/2 left-1/2 h-[46vmin] w-[46vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border border-signal/30" />
+          <div className="absolute top-[38%] left-1/2 h-[34vmin] w-[34vmin] -translate-x-1/2 -translate-y-1/2 rounded-full border border-signal/30" />
         </div>
 
         <div className="edge absolute inset-x-0 top-[clamp(5rem,10vw,8rem)] flex items-start justify-between">
-          <span className="label text-ink/70">11 — Still</span>
+          <span className="label text-ink/70">
+            {chapterNo("still")} — Still
+          </span>
           <span className="label hidden text-ink/70 sm:block">
             End of volume
           </span>
@@ -111,52 +119,126 @@ export default function Still() {
 
         <div
           ref={coda}
-          className="label absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-10 text-center whitespace-nowrap text-ink opacity-0"
+          className="label absolute top-[38%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-center whitespace-nowrap text-ink opacity-0"
           style={{ letterSpacing: "1.1em" }}
         >
           Everything moves
         </div>
 
-        <div
-          ref={cta}
-          className="absolute bottom-[clamp(5rem,14vh,9rem)] left-1/2 -translate-x-1/2 opacity-0"
-        >
-          <a
-            ref={magnet}
-            href="#nothing"
-            data-cursor="cta"
-            data-cursor-label="AGAIN"
-            onClick={(e) => {
-              e.preventDefault();
-              scrollTo(0, { duration: 2.4 });
-            }}
-            className="group inline-flex items-center gap-4 border-b border-ink/25 pb-3 will-change-transform"
-          >
-            <span
-              data-magnetic-inner
-              className="label text-ink transition-[letter-spacing] duration-700 group-hover:tracking-[0.62em]"
+        {/* The CTA and the closing block share one bottom-anchored
+            column. They used to be two absolutes at hand-picked offsets
+            from the bottom, which meant the gap between them was a
+            guess about the block's height, and on a short viewport the
+            guess was wrong and they overlapped. */}
+        <div className="edge absolute inset-x-0 bottom-[clamp(1.25rem,3.5vw,2.5rem)] flex flex-col items-center gap-[clamp(1.75rem,5vh,3.25rem)]">
+          <div ref={cta} className="opacity-0">
+            <a
+              ref={magnet}
+              href="#nothing"
+              data-cursor="cta"
+              data-cursor-label="AGAIN"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollTo(0, { duration: 2.4 });
+              }}
+              className="group inline-flex items-center gap-4 border-b border-ink/25 pb-3 will-change-transform"
             >
-              Enter again
-            </span>
-            <span className="block text-signal transition-transform duration-700 group-hover:translate-x-1.5 group-hover:-rotate-45">
-              {/* hairline arrow */}
-              <svg width="26" height="8" viewBox="0 0 26 8" fill="none" aria-hidden>
-                <path
-                  d="M0 4h24M20.5 0.5 24.5 4l-4 3.5"
-                  stroke="currentColor"
-                  strokeWidth="1"
-                />
-              </svg>
-            </span>
-          </a>
-        </div>
+              <span
+                data-magnetic-inner
+                className="label text-ink transition-[letter-spacing] duration-700 group-hover:tracking-[0.62em]"
+              >
+                Enter again
+              </span>
+              <span className="block text-signal transition-transform duration-700 group-hover:translate-x-1.5 group-hover:-rotate-45">
+                {/* hairline arrow */}
+                <svg
+                  width="26"
+                  height="8"
+                  viewBox="0 0 26 8"
+                  fill="none"
+                  aria-hidden
+                >
+                  <path
+                    d="M0 4h24M20.5 0.5 24.5 4l-4 3.5"
+                    stroke="currentColor"
+                    strokeWidth="1"
+                  />
+                </svg>
+              </span>
+            </a>
+          </div>
 
-        <div
-          ref={credit}
-          className="edge absolute inset-x-0 bottom-[clamp(1.5rem,4vw,3rem)] flex flex-wrap items-end justify-between gap-4 opacity-0"
-        >
-          <span className="label text-ink/60">Astra — Volume 01 / Object</span>
-          <span className="label text-ink/60">Eleven movements — one take</span>
+          {/* The closing block. It arrives with the CTA, on the same
+            `end` progress, so the silence in the middle of the section
+            stays silent and everything printed after the volume lands
+            at once, the way the back of a book does. */}
+          <div ref={credit} className="w-full opacity-0">
+            <div className="mx-auto max-w-[92rem]">
+              <div className="h-px w-full bg-rule-light" />
+
+              <div className="grid gap-x-[clamp(1.5rem,4vw,4rem)] gap-y-6 pt-[clamp(1.25rem,2.5vw,2rem)] sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                  <h2 className="label text-ink/45">This volume</h2>
+                  <p
+                    className="display-italic mt-3 max-w-[22ch] text-ink/75"
+                    style={{ fontSize: "clamp(0.95rem,1.1vw,1.1rem)" }}
+                  >
+                    Twenty objects, photographed against nothing.
+                  </p>
+                </div>
+
+                <div>
+                  <h2 className="label text-ink/45">Next</h2>
+                  <p
+                    className="display-italic mt-3 max-w-[22ch] text-ink/75"
+                    style={{ fontSize: "clamp(0.95rem,1.1vw,1.1rem)" }}
+                  >
+                    Volume 02 — Surface, this winter.
+                  </p>
+                </div>
+
+                <div>
+                  <h2 className="label text-ink/45">Elsewhere</h2>
+                  <ul className="mt-3 space-y-1.5">
+                    {ELSEWHERE.map((l) => (
+                      <li key={l.label}>
+                        <a
+                          href={l.href}
+                          data-cursor="cta"
+                          data-cursor-label="GO"
+                          className="display-italic text-ink/75 transition-colors duration-500 hover:text-signal"
+                          style={{ fontSize: "clamp(0.95rem,1.1vw,1.1rem)" }}
+                        >
+                          {l.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="lg:text-right">
+                  <h2 className="label text-ink/45">Studio</h2>
+                  <address
+                    className="display-italic mt-3 text-ink/75 not-italic"
+                    style={{ fontSize: "clamp(0.95rem,1.1vw,1.1rem)" }}
+                  >
+                    Unit 4, Ashfield Works
+                    <br />
+                    London E2 — by appointment
+                  </address>
+                </div>
+              </div>
+
+              <div className="mt-[clamp(1.25rem,2.5vw,2rem)] flex flex-wrap items-end justify-between gap-4">
+                <span className="label text-ink/45">
+                  © 2026 Astra — Volume 01 / Object
+                </span>
+                <span className="label text-ink/45">
+                  {MOVEMENTS} movements — one take
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Chapter>

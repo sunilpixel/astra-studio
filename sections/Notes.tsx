@@ -1,7 +1,8 @@
 "use client";
 
 import Chapter from "@/components/Chapter";
-import { gsap, prefersReducedMotion } from "@/lib/gsap";
+import { chapterNo } from "@/lib/chapters";
+import { gsap, prefersReducedMotion, SplitText } from "@/lib/gsap";
 import { useGsapContext, useReveal } from "@/hooks/animation";
 
 /**
@@ -9,8 +10,14 @@ import { useGsapContext, useReveal } from "@/hooks/animation";
  *
  * Everything before this is a photograph or a piece of motion, and a
  * volume that never says anything in its own words is a lookbook. The
- * notes are set as body copy, at a size you would actually read, and
- * nothing in here moves once it has arrived.
+ * notes are set as body copy, at a size you would actually read.
+ *
+ * The one thing that moves is the reading itself: each note is split
+ * into words and scrubbed from dim to full as it passes, so the line
+ * you are on is the brightest thing on the screen and the scroll is
+ * doing the same work your eye is. Nothing translates, nothing fades in
+ * as a block; the text is in place the whole time and only its weight
+ * on the page changes.
  */
 
 const NOTES = [
@@ -47,24 +54,54 @@ export default function Notes() {
   const head = useReveal<HTMLHeadingElement>({ kind: "lines", start: "top 84%" });
 
   const scope = useGsapContext<HTMLDivElement>((el) => {
-    const items = el.querySelectorAll("[data-note]");
+    const heads = el.querySelectorAll("[data-note-head]");
+    const bodies = el.querySelectorAll<HTMLElement>("[data-note-body]");
     const rows = el.querySelectorAll("[data-colophon]");
+
     if (prefersReducedMotion()) {
-      gsap.set([...items, ...rows], { autoAlpha: 1, y: 0 });
+      gsap.set([...heads, ...bodies, ...rows], { autoAlpha: 1, y: 0 });
       return;
     }
 
     gsap.fromTo(
-      items,
-      { autoAlpha: 0, y: 34 },
+      heads,
+      { autoAlpha: 0, y: 18 },
       {
         autoAlpha: 1,
         y: 0,
-        duration: 1.1,
-        stagger: 0.14,
+        duration: 0.9,
+        stagger: 0.1,
         ease: "astra",
-        scrollTrigger: { trigger: el, start: "top 70%", once: true },
+        scrollTrigger: { trigger: el, start: "top 74%", once: true },
       },
+    );
+
+    // No mask on this split. The masks are for lines that travel out of
+    // one, and these do not move at all; wrapping them would only put an
+    // overflow:hidden around every descender for nothing.
+    const splits = Array.from(bodies).map((body) =>
+      SplitText.create(body, {
+        type: "words",
+        aria: "auto",
+        autoSplit: true,
+        onSplit: (self) =>
+          gsap.fromTo(
+            self.words,
+            { opacity: 0.16 },
+            {
+              opacity: 1,
+              ease: "none",
+              stagger: 0.4,
+              scrollTrigger: {
+                trigger: body,
+                start: "top 84%",
+                end: "bottom 58%",
+                scrub: true,
+                invalidateOnRefresh: true,
+              },
+            },
+          ),
+      }),
     );
 
     gsap.fromTo(
@@ -78,6 +115,8 @@ export default function Notes() {
         scrollTrigger: { trigger: rows[0] ?? el, start: "top 92%", once: true },
       },
     );
+
+    return () => splits.forEach((s) => s.revert());
   });
 
   return (
@@ -88,7 +127,7 @@ export default function Notes() {
       >
         <div className="mx-auto max-w-[92rem]">
           <div className="flex items-start justify-between gap-6">
-            <span className="label text-paper/70">10 — Notes</span>
+            <span className="label text-paper/70">{chapterNo("notes")} — Notes</span>
             <span className="label hidden text-paper/70 sm:block">
               In our own words
             </span>
@@ -106,15 +145,15 @@ export default function Notes() {
             {NOTES.map((note) => (
               <article
                 key={note.n}
-                data-note
-                className="border-t border-paper/15 pt-6 opacity-0"
+                className="border-t border-paper/15 pt-6"
               >
-                <div className="flex items-baseline gap-4">
+                <div data-note-head className="flex items-baseline gap-4 opacity-0">
                   <span className="label text-signal">{note.n}</span>
                   <h3 className="label text-paper">{note.head}</h3>
                 </div>
                 <p
-                  className="mt-5 max-w-[46ch] text-paper/70"
+                  data-note-body
+                  className="mt-5 max-w-[46ch] text-paper"
                   style={{
                     fontSize: "clamp(0.95rem,1.15vw,1.1rem)",
                     lineHeight: 1.62,

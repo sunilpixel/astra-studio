@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import Chapter from "@/components/Chapter";
+import { chapterNo } from "@/lib/chapters";
 import Plate from "@/components/Plate";
 import { gsap, prefersReducedMotion } from "@/lib/gsap";
 import { usePinSection } from "@/hooks/animation";
@@ -115,7 +116,7 @@ export default function Weight() {
               Everything holds until it doesn&apos;t. Then it holds
               nothing at all.
             </p>
-            <span className="label shrink-0 text-paper/70">07 — Weight</span>
+            <span className="label shrink-0 text-paper/70">{chapterNo("weight")} — Weight</span>
           </div>
         </div>
       </div>

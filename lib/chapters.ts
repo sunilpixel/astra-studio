@@ -6,19 +6,43 @@ export type Chapter = {
   group: "index" | "studies" | "objects" | "archive";
 };
 
-export const CHAPTERS: Chapter[] = [
-  { id: "nothing", index: "01", title: "Nothing", group: "index" },
-  { id: "between", index: "02", title: "The Space Between", group: "index" },
-  { id: "studies", index: "03", title: "Five Studies", group: "studies" },
-  { id: "matter", index: "04", title: "Matter", group: "studies" },
-  { id: "archive", index: "05", title: "Archive", group: "archive" },
-  { id: "composition", index: "06", title: "Composition", group: "objects" },
-  { id: "weight", index: "07", title: "Weight", group: "objects" },
-  { id: "motion", index: "08", title: "Motion", group: "objects" },
-  { id: "passage", index: "09", title: "Passage", group: "studies" },
-  { id: "notes", index: "10", title: "Notes", group: "archive" },
-  { id: "still", index: "11", title: "Still", group: "archive" },
+/**
+ * Order is the only thing declared here. The numbers are derived from
+ * it, because they were hand-written into nine section headers as well
+ * as this list, and every movement inserted in the middle silently put
+ * the two out of step.
+ */
+const ORDER = [
+  { id: "nothing", title: "Nothing", group: "index" },
+  { id: "between", title: "The Space Between", group: "index" },
+  { id: "studies", title: "Five Studies", group: "studies" },
+  { id: "matter", title: "Matter", group: "studies" },
+  { id: "archive", title: "Archive", group: "archive" },
+  { id: "composition", title: "Composition", group: "objects" },
+  { id: "weight", title: "Weight", group: "objects" },
+  { id: "motion", title: "Motion", group: "objects" },
+  { id: "passage", title: "Passage", group: "studies" },
+  { id: "notes", title: "Notes", group: "archive" },
+  { id: "still", title: "Still", group: "archive" },
+] as const satisfies readonly Omit<Chapter, "index">[];
+
+export const CHAPTERS: Chapter[] = ORDER.map((c, i) => ({
+  ...c,
+  index: String(i + 1).padStart(2, "0"),
+}));
+
+/** The two-digit number a section prints in its own header. */
+export function chapterNo(id: string): string {
+  return CHAPTERS.find((c) => c.id === id)?.index ?? "";
+}
+
+const WORDS = [
+  "Zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight",
+  "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen",
 ];
+
+/** "Eleven", for the copy that counts the movements out loud. */
+export const MOVEMENTS = WORDS[CHAPTERS.length] ?? String(CHAPTERS.length);
 
 export const NAV = [
   { key: "index", label: "Index", target: "#nothing" },

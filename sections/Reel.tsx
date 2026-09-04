@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Chapter from "@/components/Chapter";
+import { chapterNo } from "@/lib/chapters";
 import Plate from "@/components/Plate";
 import { gsap, Observer, prefersReducedMotion } from "@/lib/gsap";
 import { blade, chevron, iris, shutter, slit } from "@/lib/clip";
@@ -285,14 +286,14 @@ export default function Reel() {
           {/* the words */}
           <div className="edge order-2 flex flex-col justify-center py-8 lg:order-1 lg:py-[12vh]">
             <div className="label mb-[clamp(1.5rem,4vw,3rem)] flex items-center gap-4 text-paper/70">
-              <span>03</span>
+              <span>{chapterNo("studies")}</span>
               <span className="h-px w-10 bg-paper/25" />
               <span>Five studies</span>
             </div>
 
             {/* Every slide is absolutely positioned, so this height is
                 the height they all get. It has to clear the tallest. */}
-            <div className="relative min-h-[clamp(21rem,36vh,26rem)]">
+            <div className="relative min-h-[clamp(23rem,40vh,29rem)]">
               {SLIDES.map((s, i) => (
                 <div
                   key={s.index}
@@ -312,7 +313,7 @@ export default function Reel() {
                   </div>
 
                   <h2
-                    className="display mt-5 text-paper"
+                    className="display mt-[clamp(1.25rem,2.4vw,2rem)] text-paper"
                     style={{ fontSize: "clamp(2.4rem,5.2vw,5rem)" }}
                   >
                     {s.title.map((line) => (
@@ -328,7 +329,7 @@ export default function Reel() {
                       text. display-italic's 1.02 leading is for single
                       display lines and collides once this wraps. */}
                   <div
-                    className="line-mask mt-7"
+                    className="line-mask mt-[clamp(1.75rem,3.4vw,3rem)]"
                     style={{ fontSize: "clamp(1.05rem,1.5vw,1.4rem)" }}
                   >
                     <p
@@ -340,7 +341,7 @@ export default function Reel() {
                     </p>
                   </div>
 
-                  <div className="mt-8 flex items-center gap-6">
+                  <div className="mt-[clamp(2rem,4vw,3.25rem)] flex items-center gap-6">
                     <div className="line-mask">
                       <span data-piece className="label block text-paper/60">
                         {s.place}

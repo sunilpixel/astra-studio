@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import Chapter from "@/components/Chapter";
+import { chapterNo } from "@/lib/chapters";
 import Plate from "@/components/Plate";
 import { gsap, prefersReducedMotion } from "@/lib/gsap";
 import { usePinSection } from "@/hooks/animation";
@@ -100,7 +101,7 @@ export default function Composition() {
           />
           <div ref={meta} className="mt-6 opacity-0">
             <span className="label text-paper/80">
-              06 — Three negatives, one decision
+              {chapterNo("composition")} — Three negatives, one decision
             </span>
           </div>
         </div>

@@ -42,6 +42,8 @@ export default function Page() {
           plate="flat"
           note="Tracking as distance"
           dir="right"
+          next="studies"
+          skew={26}
           spread={1.1}
         />
 
@@ -53,6 +55,8 @@ export default function Page() {
           to="paper"
           plate="dial"
           dir="left"
+          next="matter"
+          skew={44}
           spread={0.95}
         />
 
@@ -65,6 +69,8 @@ export default function Page() {
           plate="carry"
           note="Interval"
           dir="left"
+          next="archive"
+          skew={10}
           spread={0.85}
         />
 
@@ -76,6 +82,8 @@ export default function Page() {
           to="ink"
           plate="salve"
           dir="right"
+          next="composition"
+          skew={36}
           spread={0.8}
         />
 
@@ -91,6 +99,8 @@ export default function Page() {
           to="paper"
           plate="relief"
           dir="left"
+          next="still"
+          skew={18}
           spread={0.9}
         />
 

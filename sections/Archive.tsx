@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Chapter from "@/components/Chapter";
+import { chapterNo } from "@/lib/chapters";
 import Plate from "@/components/Plate";
 import { gsap, prefersReducedMotion } from "@/lib/gsap";
 import { usePinSection } from "@/hooks/animation";
@@ -96,7 +97,7 @@ export default function Archive() {
         className="relative h-[100svh] w-full overflow-hidden bg-paper text-ink"
       >
         <div className="edge absolute inset-x-0 top-[clamp(5rem,10vw,8rem)] z-40 flex items-start justify-between">
-          <span className="label text-ink/70">05 — Archive</span>
+          <span className="label text-ink/70">{chapterNo("archive")} — Archive</span>
           <span className="label hidden text-ink/70 sm:block">
             Five prints / one table
           </span>

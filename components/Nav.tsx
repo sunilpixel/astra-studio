@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap, prefersReducedMotion } from "@/lib/gsap";
 import { lockScroll, scrollTo } from "@/lib/scroll";
-import { CHAPTERS, NAV } from "@/lib/chapters";
+import { CHAPTERS, MOVEMENTS, NAV } from "@/lib/chapters";
 import { blade } from "@/lib/clip";
 
 export default function Nav() {
@@ -257,7 +257,7 @@ export default function Nav() {
           ))}
         </nav>
         <p className="label mt-[clamp(1.25rem,3vw,2.25rem)] max-w-sm text-paper/60">
-          Volume 01 — Object. Eleven movements, one continuous take.
+          Volume 01 — Object. {MOVEMENTS} movements, one continuous take.
         </p>
       </div>
     </>

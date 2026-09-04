@@ -1,23 +1,46 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import Plate from "@/components/Plate";
-import { gsap, prefersReducedMotion } from "@/lib/gsap";
+import {
+  gsap,
+  isTouch,
+  prefersReducedMotion,
+  ScrollTrigger,
+} from "@/lib/gsap";
 import { useGsapContext } from "@/hooks/animation";
 import { blade } from "@/lib/clip";
+import { CHAPTERS } from "@/lib/chapters";
+import { scrollState } from "@/lib/scroll";
 import type { PlateKey } from "@/lib/media";
+import type { SnowHandle } from "@/webgl/snowfield";
 
 /**
- * A full-screen transition between movements. Three angled blades cross
- * the viewport, one behind the other, all of them clip-paths:
+ * The part-title page between two movements.
+ *
+ * It was only ever a transition: three blades, a word, and then two
+ * viewports of flat colour with nothing to look at. Long enough to feel
+ * like a loading screen. So it now does the job a part-title page does
+ * in a book, and announces what is coming: the number, the title, the
+ * epigraph, the plate. The cut is the arrival of that card, not the
+ * whole event.
+ *
+ * Three layers cross the frame, offset, so at the midpoint you are
+ * looking at three bands at once:
  *
  *   1. a photograph sweeps in over the outgoing ground
  *   2. the incoming ground sweeps in over the photograph
- *   3. a hairline rides the leading edge of the cut
+ *   3. a hairline of signal rides its leading edge
  *
- * They are offset, so at the midpoint you see three bands at once. The
- * word sits on top in difference blend and inverts itself as each band
- * passes under it. Nothing fades; the only animated property is shape.
+ * All three are the same blade at three different points, and `skew` is
+ * what separates one join from the next: the angle of the cut changes
+ * every time, which is a difference you feel without being told. Five
+ * different clip families here reads as five unrelated effects; five
+ * angles of the same cut reads as one film.
+ *
+ * The incoming ground is not a flat fill either. The dust that has been
+ * hanging since Matter is in the air behind the card, clipped by the
+ * same blade and tinted for whichever ground is arriving.
  */
 export default function Curtain({
   word,
@@ -25,7 +48,10 @@ export default function Curtain({
   to,
   plate,
   note,
+  next,
   dir = "right",
+  /** lean of the cut, in % of frame height. Different at every join. */
+  skew = 26,
   /** peak letter-spacing, in em */
   spread = 0.9,
 }: {
@@ -34,21 +60,85 @@ export default function Curtain({
   to: "paper" | "ink";
   plate: PlateKey;
   note?: string;
+  /** id of the movement this join is announcing */
+  next: string;
   dir?: "right" | "left";
+  skew?: number;
   spread?: number;
 }) {
   const image = useRef<HTMLDivElement>(null);
   const ground = useRef<HTMLDivElement>(null);
   const edge = useRef<HTMLDivElement>(null);
   const type = useRef<HTMLDivElement>(null);
-  const meta = useRef<HTMLSpanElement>(null);
+  const card = useRef<HTMLDivElement>(null);
+  const rule = useRef<HTMLDivElement>(null);
+  const frame = useRef<HTMLDivElement>(null);
+  const air = useRef<HTMLCanvasElement>(null);
+  const dust = useRef<SnowHandle | null>(null);
 
   const HEX = { paper: "#ffffff", ink: "#000000" } as const;
+  const chapter = CHAPTERS.find((c) => c.id === next);
+
+  useEffect(() => {
+    const canvas = air.current;
+    if (!canvas || prefersReducedMotion()) return;
+
+    let handle: SnowHandle | null = null;
+    let cancelled = false;
+
+    import("@/webgl/snowfield").then(({ createSnowfield }) => {
+      if (cancelled || !air.current) return;
+      handle = createSnowfield({
+        back: air.current,
+        quality: isTouch() || window.innerWidth < 820 ? "low" : "high",
+        // The motes have to be the opposite of the ground arriving, not
+        // of the one being left behind.
+        ...(to === "ink"
+          ? { tint: [255, 253, 248] as [number, number, number], sizeScale: 0.8 }
+          : { tint: [10, 10, 12] as [number, number, number], sizeScale: 0.4 }),
+      });
+      handle.setDensity(0);
+      dust.current = handle;
+    });
+
+    const pump = () => dust.current?.setVelocity(scrollState.velocity);
+    gsap.ticker.add(pump);
+
+    // The whole section, not the ground div: that one lives inside the
+    // sticky panel, so its own start and end resolve against the panel
+    // rather than the page.
+    const section = canvas.closest("[data-curtain]");
+    if (!section) return;
+
+    const st = ScrollTrigger.create({
+      trigger: section,
+      start: "top bottom",
+      end: "bottom top",
+      onToggle: (self) => dust.current?.setActive(self.isActive),
+    });
+
+    return () => {
+      cancelled = true;
+      st.kill();
+      gsap.ticker.remove(pump);
+      handle?.destroy();
+      dust.current = null;
+    };
+  }, [to]);
 
   const scope = useGsapContext<HTMLDivElement>((el) => {
+    const lines = el.querySelectorAll("[data-card]");
+
     if (prefersReducedMotion()) {
-      gsap.set([image.current, ground.current], { clipPath: blade(1, dir) });
+      gsap.set([image.current, ground.current], {
+        clipPath: blade(1, dir, skew),
+      });
       gsap.set(edge.current, { opacity: 0 });
+      gsap.set([lines, rule.current, frame.current], {
+        autoAlpha: 1,
+        yPercent: 0,
+        scaleX: 1,
+      });
       return;
     }
 
@@ -58,13 +148,21 @@ export default function Curtain({
       gsap.utils.clamp(0, 1, (state.p - lag) / (1 - lag - 0.06));
 
     const paint = () => {
-      gsap.set(image.current, { clipPath: blade(at(0), dir) });
-      gsap.set(ground.current, { clipPath: blade(at(0.22), dir) });
+      gsap.set(image.current, { clipPath: blade(at(0), dir, skew) });
       const lead = at(0.22);
+      gsap.set(ground.current, { clipPath: blade(lead, dir, skew) });
       gsap.set(edge.current, {
-        clipPath: blade(lead, dir),
+        clipPath: blade(lead, dir, skew),
         opacity: lead > 0.001 && lead < 0.999 ? 1 : 0,
       });
+
+      // The air thickens behind the blade as it crosses and thins out
+      // again before the section hands over, so the dust belongs to the
+      // cut rather than sitting on top of it.
+      const leave = gsap.utils.clamp(0, 1, (state.p - 0.86) / 0.14);
+      dust.current?.setDensity(
+        gsap.utils.clamp(0, 1, lead * 1.7) * (1 - leave),
+      );
     };
 
     // The sticky panel is only locked to the viewport between the
@@ -107,15 +205,52 @@ export default function Curtain({
       .fromTo(
         type.current,
         { letterSpacing: "-0.02em", scale: 0.9 },
-        { letterSpacing: fit, scale: 1.04, duration: 0.55, ease: "astra-io" },
+        { letterSpacing: fit, scale: 1.04, duration: 0.5, ease: "astra-io" },
         0,
       )
+      // The word gives the card its room rather than leaving: it closes
+      // up and lifts, and what was behind it is the announcement.
       .to(
         type.current,
-        { letterSpacing: "0.12em", scale: 1, duration: 0.45, ease: "astra-io" },
-        0.55,
+        {
+          letterSpacing: "0.1em",
+          scale: 0.86,
+          yPercent: -46,
+          duration: 0.4,
+          ease: "astra-io",
+        },
+        0.5,
       )
-      .fromTo(meta.current, { opacity: 0 }, { opacity: 1, duration: 0.2 }, 0.45);
+      // the card, once the ground has finished crossing
+      .fromTo(
+        rule.current,
+        { scaleX: 0 },
+        { scaleX: 1, duration: 0.25, ease: "astra-io" },
+        0.56,
+      )
+      .fromTo(
+        lines,
+        { yPercent: 130, opacity: 0 },
+        {
+          yPercent: 0,
+          opacity: 1,
+          duration: 0.3,
+          stagger: 0.055,
+          ease: "astra",
+        },
+        0.6,
+      )
+      .fromTo(
+        frame.current,
+        { clipPath: blade(0, dir, skew), scale: 1.14 },
+        {
+          clipPath: blade(1, dir, skew),
+          scale: 1,
+          duration: 0.34,
+          ease: "astra-io",
+        },
+        0.64,
+      );
 
     paint();
   });
@@ -123,56 +258,112 @@ export default function Curtain({
   return (
     <div
       ref={scope}
-      aria-hidden
+      data-curtain
       className="relative h-[220svh] w-full overflow-clip"
       style={{ backgroundColor: HEX[from] }}
     >
       <div className="sticky top-0 h-[100svh] w-full overflow-hidden">
-        {/* blade 01: the photograph */}
+        {/* 01: the photograph */}
         <div
           ref={image}
           className="absolute inset-0"
-          style={{ clipPath: blade(0, dir) }}
+          style={{ clipPath: blade(0, dir, skew) }}
         >
           <Plate name={plate} sizes="100vw" quality={75} hard />
         </div>
 
-        {/* blade 02: the incoming ground */}
-        <div
-          ref={ground}
-          className="absolute inset-0"
-          style={{ backgroundColor: HEX[to], clipPath: blade(0, dir) }}
-        />
-
-        {/* blade 03: a hairline riding the cut */}
+        {/* 02: the signal, sitting under the ground at a fractionally
+            larger scale so all that survives of it is a rim on the
+            leading edge of the cut */}
         <div
           ref={edge}
           className="absolute inset-0 opacity-0"
           style={{
-            clipPath: blade(0, dir),
-            // the signal colour, used here and almost nowhere else
-            background: `linear-gradient(${dir === "right" ? 92 : 88}deg, transparent calc(100% - 2px), #ff2d16 calc(100% - 2px))`,
+            clipPath: blade(0, dir, skew),
+            backgroundColor: "#ff2d16",
+            transform: "scale(1.007)",
           }}
         />
 
+        {/* 03: the incoming ground, with its own air in it */}
+        <div
+          ref={ground}
+          className="absolute inset-0"
+          style={{ backgroundColor: HEX[to], clipPath: blade(0, dir, skew) }}
+        >
+          <canvas ref={air} className="absolute inset-0 h-full w-full" />
+        </div>
+
+        {/* the word, which lifts to make room for the card */}
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
           <div
             ref={type}
-            className="display whitespace-nowrap text-paper mix-blend-difference will-change-transform select-none"
+            className="display text-paper mix-blend-difference will-change-transform select-none whitespace-nowrap"
             style={{ fontSize: "clamp(1.5rem,6.4vw,5.5rem)", fontWeight: 600 }}
           >
             {word}
           </div>
         </div>
 
-        {note && (
-          <span
-            ref={meta}
-            className="label absolute bottom-[clamp(1.5rem,4vw,3rem)] left-1/2 -translate-x-1/2 text-paper opacity-0 mix-blend-difference"
-          >
-            {note}
-          </span>
-        )}
+        {/* the card */}
+        <div
+          ref={card}
+          className="edge absolute inset-x-0 bottom-[clamp(3rem,12vh,7rem)] text-paper mix-blend-difference"
+        >
+          <div className="mx-auto max-w-[92rem]">
+            <div
+              ref={rule}
+              className="h-px w-full origin-left bg-current opacity-45"
+              style={{ transform: "scaleX(0)" }}
+            />
+
+            <div className="grid items-end gap-x-[clamp(1.5rem,4vw,3.5rem)] gap-y-6 pt-[clamp(1rem,2.4vw,1.75rem)] sm:grid-cols-[auto_minmax(0,1fr)_auto]">
+              <div className="line-mask">
+                <span data-card className="label block opacity-60">
+                  Next
+                </span>
+              </div>
+
+              <div>
+                <div className="line-mask">
+                  <span
+                    data-card
+                    className="display block leading-none"
+                    style={{ fontSize: "clamp(1.5rem,3.6vw,3rem)" }}
+                  >
+                    <span className="tabular-nums opacity-45">
+                      {chapter?.index}
+                    </span>
+                    <span className="px-[0.35em] opacity-45">/</span>
+                    {chapter?.title}
+                  </span>
+                </div>
+                {note && (
+                  <div className="line-mask mt-3">
+                    <span
+                      data-card
+                      className="display-italic block opacity-70"
+                      style={{ fontSize: "clamp(0.95rem,1.3vw,1.2rem)" }}
+                    >
+                      {note}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* the plate again, this time as a frame you can look at */}
+              <div
+                ref={frame}
+                className="hidden aspect-3/2 w-[clamp(7rem,14vw,12rem)] overflow-hidden lg:block"
+                style={{ clipPath: blade(0, dir, skew) }}
+              >
+                <div className="relative h-full w-full">
+                  <Plate name={plate} sizes="14vw" quality={60} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
